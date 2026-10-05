@@ -39,6 +39,7 @@
   }
   function taskText(it) {
     var parts = [it.t, it.w || "", it.n || "", it.r || "", it.x || ""];
+    (it.img || []).forEach(function (im) { parts.push(im[1]); });
     it.s.forEach(function (st) {
       if (Array.isArray(st)) { parts.push(st[0]); parts = parts.concat(st[1]); }
       else parts.push(st);
@@ -70,6 +71,14 @@
           (it.n ? '<p class="note"><b>Προσοχή:</b> ' + fmt(it.n) + "</p>" : "") +
           (it.r ? '<p class="result"><b>Αποτέλεσμα:</b> ' + fmt(it.r) + "</p>" : "") +
           (it.x ? '<p class="extra">' + fmt(it.x) + "</p>" : "") +
+          (it.img ? '<div class="shots">' + it.img.map(function (im) {
+            var cap = im[1] || "";
+            var alt = cap || plain(it.t);
+            return '<figure class="shot"><button type="button" class="shot-btn" data-src="' + esc(im[0]) +
+              '" data-cap="' + esc(cap) + '" data-alt="' + esc(alt) + '" aria-label="Μεγέθυνση εικόνας"><img src="' + esc(im[0]) +
+              '" alt="' + esc(alt) + '" loading="lazy" decoding="async"></button>' +
+              (cap ? "<figcaption>" + esc(cap) + "</figcaption>" : "") + "</figure>";
+          }).join("") + "</div>" : "") +
           "</article>";
       });
       html += "</div></div></div></div>";
@@ -222,14 +231,22 @@
 
 
   var docEl = document.documentElement;
-  var saved = null;
-  try { saved = localStorage.getItem("theme"); } catch (e) {}
-  docEl.setAttribute("data-theme", saved === "dark" ? "dark" : "light");
+  docEl.classList.remove("mode-dark");
   document.getElementById("theme").addEventListener("click", function () {
-    var cur = docEl.getAttribute("data-theme") || "light";
-    var next = cur === "dark" ? "light" : "dark";
-    docEl.setAttribute("data-theme", next);
-    try { localStorage.setItem("theme", next); } catch (e) {}
+    docEl.classList.toggle("mode-dark");
+  });
+
+
+  var modalEl = document.getElementById("shot-modal");
+  var modal = modalEl && window.bootstrap ? new bootstrap.Modal(modalEl) : null;
+  root.addEventListener("click", function (e) {
+    var b = e.target.closest(".shot-btn");
+    if (!b || !modal) return;
+    var img = document.getElementById("shot-img");
+    img.src = b.getAttribute("data-src");
+    img.alt = b.getAttribute("data-alt");
+    document.getElementById("shot-cap").textContent = b.getAttribute("data-cap");
+    modal.show();
   });
 
   defaultView();

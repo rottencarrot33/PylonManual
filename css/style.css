@@ -17,7 +17,7 @@
   --note-bg: #fff7f1;
   color-scheme: light;
 }
-:root[data-theme="dark"] {
+:root.mode-dark {
     --bg: #15100c; --surface: #1f1711; --surface-2: #2b1f16; --line: #3a2a1e;
     --ink: #f6ece4; --muted: #b9a28f; --accent: #ff7a2e; --accent-ink: #ff9a5c;
     --note-bg: #2a1c12; --mark: #7a3508; --ok: #6fd49b; --ok-bg: #15271c;
@@ -203,6 +203,27 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 13px
 .theme-btn:hover, .theme-btn:focus-visible { border-color: var(--accent); outline: none; }
 .theme-btn svg { width: 16px; height: 16px; }
 .theme-btn .moon { display: none; }
-:root[data-theme="dark"] .theme-btn .sun { display: none; }
-:root[data-theme="dark"] .theme-btn .moon { display: inline; }
+:root.mode-dark .theme-btn .sun { display: none; }
+:root.mode-dark .theme-btn .moon { display: inline; }
 @media (max-width: 480px) { .theme-btn .lbl { display: none; } }
+
+.shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 12px; }
+.shot { margin: 0; min-width: 0; }
+.shot-btn {
+  display: block; width: 100%; padding: 0; border: 1px solid var(--line); border-radius: 8px;
+  overflow: hidden; background: var(--surface-2); cursor: zoom-in;
+}
+.shot-btn img { display: block; width: 100%; height: auto; aspect-ratio: 1100 / 584; object-fit: cover; object-position: top left; }
+.shot-btn:hover, .shot-btn:focus-visible { border-color: var(--accent); outline: none; }
+.shot figcaption { font-size: 13px; color: var(--muted); margin-top: 5px; }
+.modal { --bs-modal-bg: var(--bg); --bs-modal-color: var(--ink); --bs-modal-border-color: var(--line); }
+.modal-body { padding: 8px; }
+.modal-body img { display: block; width: 100%; height: auto; border-radius: 6px; }
+.modal-footer { justify-content: space-between; color: var(--muted); font-size: 14px; border-top-color: var(--line); }
+.modal-close {
+  border: 1px solid var(--line); background: var(--bg); color: var(--accent-ink);
+  border-radius: 999px; padding: 4px 14px; font-size: 13px; font-weight: 500;
+}
+.modal-close:hover, .modal-close:focus-visible { border-color: var(--accent); outline: none; }
+
+.modal-footer #shot-cap:empty + .modal-close { margin-left: auto; }
