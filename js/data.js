@@ -528,7 +528,7 @@ window.MANUALS = [
   ,{
     id: "kalypso",
     title: "Kalypso",
-    sub: "Back Office F&B: συνταγές, απογραφή, food cost, παραγωγή",
+    
     cats: [
       {
         id: "kal-setup",
