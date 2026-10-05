@@ -2,7 +2,6 @@ window.MANUALS = [
   {
     id: "vasikes",
     title: "Βασικές Οντότητες",
-    sub: "Πελάτες, αποθήκη, κόστος, CRM",
     cats: [
       {
         id: "pelates",
@@ -353,7 +352,6 @@ window.MANUALS = [
   {
     id: "mydata",
     title: "myDATA, Πάροχος & Λογιστική",
-    sub: "ΑΑΔΕ, ψηφιακό δελτίο, γέφυρα λογιστικής",
     cats: [
       {
         id: "aade",
@@ -528,7 +526,6 @@ window.MANUALS = [
   ,{
     id: "kalypso",
     title: "Kalypso",
-    
     cats: [
       {
         id: "kal-setup",

@@ -89,7 +89,7 @@ body {
 main { padding-block: 24px 48px; }
 .searchbar { padding-block: 14px 10px; }
 .manual { margin-bottom: 36px; }
-.manual-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.manual-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
 .manual-head h2 { font: 800 22px/1.2 var(--font-display); margin: 0; text-wrap: balance; }
 .manual-head p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
 .toggle-all {

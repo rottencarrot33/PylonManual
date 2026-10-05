@@ -50,7 +50,7 @@
   var html = "";
   MANUALS.forEach(function (m) {
     html += '<section class="manual" id="' + m.id + '" data-manual>' +
-      '<div class="manual-head"><div><h2>' + esc(m.title) + "</h2><p>" + esc(m.sub) + "</p></div>" +
+      '<div class="manual-head"><div><h2>' + esc(m.title) + "</h2></div>" +
       '<button type="button" class="toggle-all" data-toggle-all="' + m.id + '">Άνοιγμα όλων</button></div>' +
       '<div class="accordion" id="acc-' + m.id + '">';
     m.cats.forEach(function (c) {
