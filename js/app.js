@@ -1,263 +1,297 @@
 (function () {
   "use strict";
-  var MANUALS = window.MANUALS || [];
-  var root = document.getElementById("manuals");
-  var input = document.getElementById("q");
-  var clearBtn = document.getElementById("clear");
-  var statusEl = document.getElementById("status");
-  var emptyEl = document.getElementById("empty");
 
-  function esc(s) {
-    return s.replace(/[&<>"]/g, function (c) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
-    });
-  }
-  function fmt(s) {
-    return esc(s)
-      .replace(/\*\*(.+?)\*\*/g, '<span class="ui">$1</span>')
-      .replace(/›/g, '<span class="arrow" aria-hidden="true">›</span>');
-  }
+  const root = document.getElementById("manuals");
+  const input = document.getElementById("q");
+  const clearBtn = document.getElementById("clear");
+  const statusEl = document.getElementById("status");
+  const emptyEl = document.getElementById("empty");
+  const emptyQ = document.getElementById("empty-q");
+
+  const sections = [...root.querySelectorAll("[data-manual]")];
+  const cats = [...root.querySelectorAll("[data-cat]")];
+
+  cats.forEach((cat, i) => {
+    const panel = cat.querySelector(".acc-panel");
+    panel.id = "panel-" + i;
+    cat.querySelector(".acc-btn").setAttribute("aria-controls", panel.id);
+  });
+
   function normChar(c) {
-    var n = c.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+    let n = c.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
     if (n === "ς") n = "σ";
     return n.length === 1 ? n : c.toLowerCase().charAt(0) || c;
   }
+
   function norm(s) {
-    var out = "";
-    for (var i = 0; i < s.length; i++) out += normChar(s[i]);
+    let out = "";
+    for (const c of s) out += normChar(c);
     return out;
   }
-  function plain(s) { return s.replace(/\*\*/g, ""); }
 
-  function stepHtml(step) {
-    if (Array.isArray(step)) {
-      return "<li>" + fmt(step[0]) + "<ul>" +
-        step[1].map(function (x) { return "<li>" + fmt(x) + "</li>"; }).join("") +
-        "</ul></li>";
-    }
-    return "<li>" + fmt(step) + "</li>";
-  }
-  function taskText(it) {
-    var parts = [it.t, it.w || "", it.n || "", it.r || "", it.x || ""];
-    (it.img || []).forEach(function (im) { parts.push(im[1]); });
-    it.s.forEach(function (st) {
-      if (Array.isArray(st)) { parts.push(st[0]); parts = parts.concat(st[1]); }
-      else parts.push(st);
-    });
-    return norm(plain(parts.join(" ")));
+  function toTerms(query) {
+    return norm(query)
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((w) => (/^[α-ω]+$/.test(w) && w.length >= 5 ? w.replace(/[αεηιουωσ]{1,2}$/, "") : w));
   }
 
-  var html = "";
-  MANUALS.forEach(function (m) {
-    html += '<section class="manual" id="' + m.id + '" data-manual>' +
-      '<div class="manual-head"><div><h2>' + esc(m.title) + "</h2></div>" +
-      '<button type="button" class="toggle-all" data-toggle-all="' + m.id + '">Άνοιγμα όλων</button></div>' +
-      '<div class="accordion" id="acc-' + m.id + '">';
-    m.cats.forEach(function (c) {
-      var cid = m.id + "-" + c.id;
-      html += '<div class="accordion-item" data-cat id="' + c.id + '">' +
-        '<h3 class="accordion-header m-0">' +
-        '<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-' + cid +
-        '" aria-expanded="false" aria-controls="c-' + cid + '">' +
-        '<span class="ttl">' + esc(c.title) + '</span><span class="count" data-count>' + c.items.length + "</span></button></h3>" +
-        '<div id="c-' + cid + '" class="accordion-collapse collapse"><div class="accordion-body">' +
-        (c.intro ? '<p class="cat-intro">' + fmt(c.intro) + "</p>" : "") +
-        '<div class="tasks">';
-      c.items.forEach(function (it) {
-        html += '<article class="task" data-task>' +
-          "<h3>" + fmt(it.t) + "</h3>" +
-          (it.w ? '<p class="when">' + fmt(it.w) + "</p>" : "") +
-          '<ol class="steps">' + it.s.map(stepHtml).join("") + "</ol>" +
-          (it.n ? '<p class="note"><b>Προσοχή:</b> ' + fmt(it.n) + "</p>" : "") +
-          (it.r ? '<p class="result"><b>Αποτέλεσμα:</b> ' + fmt(it.r) + "</p>" : "") +
-          (it.x ? '<p class="extra">' + fmt(it.x) + "</p>" : "") +
-          (it.img ? '<div class="shots">' + it.img.map(function (im) {
-            var cap = im[1] || "";
-            var alt = cap || plain(it.t);
-            return '<figure class="shot"><button type="button" class="shot-btn" data-src="' + esc(im[0]) +
-              '" data-cap="' + esc(cap) + '" data-alt="' + esc(alt) + '" aria-label="Μεγέθυνση εικόνας"><img src="' + esc(im[0]) +
-              '" alt="' + esc(alt) + '" loading="lazy" decoding="async"></button>' +
-              (cap ? "<figcaption>" + esc(cap) + "</figcaption>" : "") + "</figure>";
-          }).join("") + "</div>" : "") +
-          "</article>";
-      });
-      html += "</div></div></div></div>";
-    });
-    html += "</div></section>";
-  });
-  root.innerHTML = html;
-
-  var tasks = [];
-  var i = 0;
-  MANUALS.forEach(function (m) {
-    m.cats.forEach(function (c) {
-      c.items.forEach(function (it) {
-        var el = root.querySelectorAll("[data-task]")[i++];
-        tasks.push({ el: el, text: taskText(it), html: el.innerHTML });
-      });
-    });
-  });
-
-  function setOpen(item, open) {
-    var btn = item.querySelector(".accordion-button");
-    var body = item.querySelector(".accordion-collapse");
-    body.classList.toggle("show", open);
-    btn.classList.toggle("collapsed", !open);
-    btn.setAttribute("aria-expanded", open ? "true" : "false");
-  }
-  function refreshToggleLabels() {
-    root.querySelectorAll("[data-manual]").forEach(function (sec) {
-      var items = Array.prototype.filter.call(sec.querySelectorAll("[data-cat]"), function (x) {
-        return !x.classList.contains("cat-hidden");
-      });
-      var allOpen = items.length && items.every(function (x) {
-        return x.querySelector(".accordion-collapse").classList.contains("show");
-      });
-      sec.querySelector("[data-toggle-all]").textContent = allOpen ? "Κλείσιμο όλων" : "Άνοιγμα όλων";
-    });
-  }
-  root.addEventListener("click", function (e) {
-    var t = e.target.closest("[data-toggle-all]");
-    if (!t) return;
-    var sec = document.getElementById(t.getAttribute("data-toggle-all"));
-    var open = t.textContent.indexOf("Άνοιγμα") === 0;
-    sec.querySelectorAll("[data-cat]").forEach(function (item) {
-      if (!item.classList.contains("cat-hidden")) setOpen(item, open);
-    });
-    refreshToggleLabels();
-  });
-  root.addEventListener("shown.bs.collapse", refreshToggleLabels);
-  root.addEventListener("hidden.bs.collapse", refreshToggleLabels);
-
-  function highlight(el, terms) {
-    var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-    var nodes = [];
+  function highlight(el, words) {
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const nodes = [];
     while (walker.nextNode()) nodes.push(walker.currentNode);
-    nodes.forEach(function (node) {
-      var text = node.nodeValue;
-      var n = norm(text);
-      var ranges = [];
-      terms.forEach(function (term) {
-        var from = 0, pos;
-        while ((pos = n.indexOf(term, from)) !== -1) {
-          ranges.push([pos, pos + term.length]);
-          from = pos + term.length;
+
+    nodes.forEach((node) => {
+      const text = node.nodeValue;
+      const n = norm(text);
+      const ranges = [];
+      words.forEach((w) => {
+        let from = 0;
+        let pos;
+        while ((pos = n.indexOf(w, from)) !== -1) {
+          ranges.push([pos, pos + w.length]);
+          from = pos + w.length;
         }
       });
       if (!ranges.length) return;
-      ranges.sort(function (a, b) { return a[0] - b[0]; });
-      var merged = [ranges[0]];
-      for (var k = 1; k < ranges.length; k++) {
-        var last = merged[merged.length - 1];
-        if (ranges[k][0] <= last[1]) last[1] = Math.max(last[1], ranges[k][1]);
-        else merged.push(ranges[k]);
+
+      ranges.sort((a, b) => a[0] - b[0]);
+      const merged = [ranges[0]];
+      for (const r of ranges.slice(1)) {
+        const last = merged[merged.length - 1];
+        if (r[0] <= last[1]) last[1] = Math.max(last[1], r[1]);
+        else merged.push(r);
       }
-      var frag = document.createDocumentFragment();
-      var cur = 0;
-      merged.forEach(function (r) {
-        if (r[0] > cur) frag.appendChild(document.createTextNode(text.slice(cur, r[0])));
-        var mk = document.createElement("mark");
-        mk.textContent = text.slice(r[0], r[1]);
-        frag.appendChild(mk);
-        cur = r[1];
+
+      const frag = document.createDocumentFragment();
+      let cur = 0;
+      merged.forEach(([a, b]) => {
+        if (a > cur) frag.append(text.slice(cur, a));
+        const mark = document.createElement("mark");
+        mark.textContent = text.slice(a, b);
+        frag.append(mark);
+        cur = b;
       });
-      if (cur < text.length) frag.appendChild(document.createTextNode(text.slice(cur)));
-      node.parentNode.replaceChild(frag, node);
+      if (cur < text.length) frag.append(text.slice(cur));
+      node.replaceWith(frag);
     });
   }
 
-  var total = tasks.length;
-  function defaultView() {
-    root.querySelectorAll("[data-cat]").forEach(function (item, idx) {
-      item.classList.remove("cat-hidden");
-      setOpen(item, false);
-      var n = item.querySelectorAll("[data-task]").length;
-      item.querySelector("[data-count]").textContent = n;
+  const visibleCats = (section) => [...section.querySelectorAll("[data-cat]")].filter((c) => !c.hidden);
+
+  function setOpen(cat, open) {
+    cat.classList.toggle("open", open);
+    cat.querySelector(".acc-btn").setAttribute("aria-expanded", String(open));
+    cat.querySelector(".acc-panel").inert = !open;
+  }
+
+  function refreshLabels() {
+    sections.forEach((section) => {
+      const list = visibleCats(section);
+      const allOpen = list.length > 0 && list.every((c) => c.classList.contains("open"));
+      section.querySelector("[data-toggle-all]").textContent = allOpen ? "Κλείσιμο όλων" : "Άνοιγμα όλων";
     });
-    root.querySelectorAll("[data-manual]").forEach(function (s) { s.hidden = false; });
-    statusEl.textContent = total + " οδηγίες σε " + root.querySelectorAll("[data-cat]").length + " κατηγορίες";
-    emptyEl.hidden = true;
-    refreshToggleLabels();
+  }
+
+  const tasks = [...root.querySelectorAll("[data-task]")].map((el) => ({
+    el,
+    html: el.innerHTML,
+    text: norm(el.textContent.replace(/\s+/g, " "))
+  }));
+  const defaultStatus = '';
+
+  function updateCounts(openMatches) {
+    cats.forEach((cat) => {
+      const visible = cat.querySelectorAll("[data-task]:not([hidden])").length;
+      cat.hidden = visible === 0;
+      cat.querySelector("[data-count]").textContent = visible;
+      setOpen(cat, openMatches && visible > 0);
+    });
+    sections.forEach((s) => {
+      s.hidden = !s.querySelector("[data-cat]:not([hidden])");
+    });
+    refreshLabels();
   }
 
   function run() {
-    var raw = input.value.trim();
+    const raw = input.value.trim();
     clearBtn.hidden = !raw;
-    tasks.forEach(function (t) { t.el.innerHTML = t.html; t.el.hidden = false; });
-    if (!raw) { defaultView(); return; }
+    tasks.forEach((t) => {
+      t.el.innerHTML = t.html;
+      t.el.hidden = false;
+    });
 
-    var terms = norm(raw).split(/\s+/).filter(Boolean).map(function (w) {
-      if (/^[α-ω]+$/.test(w) && w.length >= 5) w = w.replace(/[αεηιουωσ]{1,2}$/, "");
-      return w;
-    });
-    var hits = 0;
-    tasks.forEach(function (t) {
-      var ok = terms.every(function (term) { return t.text.indexOf(term) !== -1; });
+    if (!raw) {
+      updateCounts(false);
+      statusEl.textContent = defaultStatus;
+      emptyEl.hidden = true;
+      return;
+    }
+
+    const words = toTerms(raw);
+    let hits = 0;
+    tasks.forEach((t) => {
+      const ok = words.every((w) => t.text.includes(w));
       t.el.hidden = !ok;
-      if (ok) { hits++; highlight(t.el, terms); }
+      if (ok) {
+        hits++;
+        highlight(t.el, words);
+      }
     });
-    root.querySelectorAll("[data-cat]").forEach(function (item) {
-      var visible = item.querySelectorAll("[data-task]:not([hidden])").length;
-      item.classList.toggle("cat-hidden", visible === 0);
-      item.querySelector("[data-count]").textContent = visible;
-      setOpen(item, visible > 0);
-    });
-    root.querySelectorAll("[data-manual]").forEach(function (s) {
-      s.hidden = !s.querySelector("[data-cat]:not(.cat-hidden)");
-    });
-    statusEl.textContent = hits
-      ? hits + (hits === 1 ? " αποτέλεσμα" : " αποτελέσματα") + " για «" + raw + "»"
-      : "";
+
+    updateCounts(true);
+    statusEl.textContent = hits ? `${hits} ${hits === 1 ? "αποτέλεσμα" : "αποτελέσματα"} για «${raw}»` : "";
     emptyEl.hidden = hits > 0;
-    if (!hits) document.getElementById("empty-q").textContent = "«" + raw + "»";
-    refreshToggleLabels();
+    if (!hits) emptyQ.textContent = `«${raw}»`;
   }
 
-  var timer;
-  input.addEventListener("input", function () {
+  root.addEventListener("click", (e) => {
+    const btn = e.target.closest(".acc-btn");
+    if (btn) {
+      const cat = btn.closest("[data-cat]");
+      setOpen(cat, !cat.classList.contains("open"));
+      refreshLabels();
+      return;
+    }
+    const all = e.target.closest("[data-toggle-all]");
+    if (all) {
+      const open = all.textContent.startsWith("Άνοιγμα");
+      visibleCats(all.closest("[data-manual]")).forEach((c) => setOpen(c, open));
+      refreshLabels();
+    }
+  });
+
+  let timer;
+  input.addEventListener("input", () => {
     clearTimeout(timer);
     timer = setTimeout(run, 120);
   });
-  input.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") { input.value = ""; run(); }
-  });
-  clearBtn.addEventListener("click", function () { input.value = ""; run(); input.focus(); });
-  document.querySelectorAll("[data-q]").forEach(function (b) {
-    b.addEventListener("click", function () { input.value = b.getAttribute("data-q"); run(); });
-  });
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "/" && document.activeElement !== input) { e.preventDefault(); input.focus(); }
-  });
-
-
-  var docEl = document.documentElement;
-  docEl.classList.remove("mode-dark");
-  document.getElementById("theme").addEventListener("click", function () {
-    docEl.classList.toggle("mode-dark");
-  });
-
-
-  var modalEl = document.getElementById("shot-modal");
-  var modal = modalEl && window.bootstrap ? new bootstrap.Modal(modalEl) : null;
-  root.addEventListener("click", function (e) {
-    var b = e.target.closest(".shot-btn");
-    if (!b || !modal) return;
-    var img = document.getElementById("shot-img");
-    img.src = b.getAttribute("data-src");
-    img.alt = b.getAttribute("data-alt");
-    document.getElementById("shot-cap").textContent = b.getAttribute("data-cap");
-    modal.show();
-  });
-
-  defaultView();
-
-  var h = (location.hash || "").slice(1);
-  if (h) {
-    var target = document.getElementById(h);
-    if (target && target.hasAttribute("data-cat")) {
-      setOpen(target, true);
-      refreshToggleLabels();
-      target.scrollIntoView();
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      input.value = "";
+      run();
     }
+  });
+  clearBtn.addEventListener("click", () => {
+    input.value = "";
+    run();
+    input.focus();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "/" && document.activeElement !== input) {
+      e.preventDefault();
+      input.focus();
+    }
+  });
+
+  const html = document.documentElement;
+  html.classList.remove("dark");
+  document.getElementById("theme").addEventListener("click", () => html.classList.toggle("dark"));
+
+  const dialog = document.getElementById("shot-modal");
+  const shotImg = document.getElementById("shot-img");
+  const shotCap = document.getElementById("shot-cap");
+  root.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-shot]");
+    if (!btn) return;
+    const img = btn.querySelector("img");
+    shotImg.src = btn.dataset.shot;
+    shotImg.alt = img ? img.alt : "";
+    shotCap.textContent = btn.dataset.cap || "";
+    dialog.showModal();
+  });
+  dialog.addEventListener("click", (e) => {
+    if (e.target === dialog) dialog.close();
+  });
+
+  const CRC = Array.from({ length: 256 }, (_, n) => {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    return c >>> 0;
+  });
+
+  function crc32(bytes) {
+    let c = 0xffffffff;
+    for (const b of bytes) c = CRC[(c ^ b) & 255] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  }
+
+  function zipOne(name, data) {
+    const nm = new TextEncoder().encode(name);
+    const crc = crc32(data);
+    const size = data.length;
+
+    const local = new DataView(new ArrayBuffer(30));
+    local.setUint32(0, 0x04034b50, true);
+    local.setUint16(4, 20, true);
+    local.setUint16(6, 0x0800, true);
+    local.setUint32(14, crc, true);
+    local.setUint32(18, size, true);
+    local.setUint32(22, size, true);
+    local.setUint16(26, nm.length, true);
+
+    const central = new DataView(new ArrayBuffer(46));
+    central.setUint32(0, 0x02014b50, true);
+    central.setUint16(4, 20, true);
+    central.setUint16(6, 20, true);
+    central.setUint16(8, 0x0800, true);
+    central.setUint32(16, crc, true);
+    central.setUint32(20, size, true);
+    central.setUint32(24, size, true);
+    central.setUint16(28, nm.length, true);
+
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true);
+    end.setUint16(8, 1, true);
+    end.setUint16(10, 1, true);
+    end.setUint32(12, 46 + nm.length, true);
+    end.setUint32(16, 30 + nm.length + size, true);
+
+    return new Blob([local.buffer, nm, data, central.buffer, nm, end.buffer], { type: "application/zip" });
+  }
+
+  function browserSave(filename, blob) {
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement("a"), { href: url, download: filename });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  const host = window.claude && window.claude.use ? window.claude.use("downloads").catch(() => null) : Promise.resolve(null);
+
+  root.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-dl]");
+    if (!btn) return;
+    const msg = btn.parentNode.querySelector("[data-dl-msg]");
+    msg.textContent = "";
+    btn.disabled = true;
+    try {
+      const res = await fetch(btn.dataset.dl);
+      if (!res.ok) throw new Error(String(res.status));
+      const name = btn.dataset.name;
+      const blob = zipOne(name, new Uint8Array(await res.arrayBuffer()));
+      const filename = name.replace(/\.[^.]+$/, "") + ".zip";
+      const dl = await host;
+      if (dl) await dl.save({ filename, data: blob });
+      else browserSave(filename, blob);
+      msg.textContent = "Το αρχείο αποθηκεύτηκε.";
+    } catch (err) {
+      if (!(err && err.code === "declined")) msg.textContent = "Η λήψη δεν ολοκληρώθηκε.";
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  updateCounts(false);
+  statusEl.textContent = defaultStatus;
+
+  const hashId = decodeURIComponent(location.hash.slice(1));
+  const target = hashId && document.getElementById(hashId);
+  if (target && target.hasAttribute("data-cat")) {
+    setOpen(target, true);
+    refreshLabels();
+    target.scrollIntoView();
   }
 })();
